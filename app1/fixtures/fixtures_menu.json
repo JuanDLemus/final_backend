@@ -1,0 +1,429 @@
+[
+  {
+    "model": "app1.user",
+    "pk": 1,
+    "fields": {
+      "name": "Yuly Rodriguez",
+      "address": "123 Music Ave, Barranquilla",
+      "contact": "555-0001",
+      "buyer_score": 4.9
+    }
+  },
+  {
+    "model": "app1.user",
+    "pk": 2,
+    "fields": {
+      "name": "Juan Campuzano",
+      "address": "456 Reggaeton Blvd, Medellín",
+      "contact": "555-0002",
+      "buyer_score": 4.7
+    }
+  },
+  {
+    "model": "app1.user",
+    "pk": 3,
+    "fields": {
+      "name": "Juan Lemus",
+      "address": "789 Rammstein St, Berlin",
+      "contact": "555-0003",
+      "buyer_score": 4.6
+    }
+  },
+  {
+    "model": "app1.employee",
+    "pk": 1,
+    "fields": {
+      "user": 1,
+      "secret_password": "Sabana01",
+      "image": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/yuly_rodriguez.jpg",
+      "role": "Empleado",
+      "description": "Administrador general del sistema."
+    }
+  },
+  {
+    "model": "app1.employee",
+    "pk": 2,
+    "fields": {
+      "user": 2,
+      "secret_password": "Sabana02",
+      "image": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/juan_campuzano.jpg",
+      "role": "Empleado",
+      "description": "Encargado de ventas y atención al cliente."
+    }
+  },
+  {
+    "model": "app1.employee",
+    "pk": 3,
+    "fields": {
+      "user": 3,
+      "secret_password": "Sabana03",
+      "image": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/juan_lemus.jpg",
+      "role": "Admin",
+      "description": "Apoyo en cocina y preparación de pedidos."
+}
+},
+  {
+    "model": "app1.menuitem",
+    "pk": 1,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/burger-imgs/bacon-burger.jpg",
+      "name": "Baseadon",
+      "description": "Burger with crispy bacon",
+      "ingredients": "beef, bacon, lettuce",
+      "awareness": "gluten, meat",
+      "calories": 750,
+      "price": 6.99,
+      "category": "burger"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 2,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/burger-imgs/cheese-burger.jpg",
+      "name": "Cheese",
+      "description": "Classic cheeseburger",
+      "ingredients": "beef, cheese, tomato",
+      "awareness": "dairy, gluten",
+      "calories": 700,
+      "price": 6.45,
+      "category": "burger"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 3,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/burger-imgs/chicken-burger.jpg",
+      "name": "Chicken",
+      "description": "Grilled chicken burger",
+      "ingredients": "chicken, lettuce, mayo",
+      "awareness": "eggs, gluten",
+      "calories": 650,
+      "price": 6.49,
+      "category": "burger"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 4,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/burger-imgs/pork-burger.jpg",
+      "name": "Pork",
+      "description": "Pulled pork burger",
+      "ingredients": "pork, BBQ sauce, pickles",
+      "awareness": "gluten, meat",
+      "calories": 770,
+      "price": 6.99,
+      "category": "burger"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 5,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/burger-imgs/veggie-burger.jpg",
+      "name": "Veggie",
+      "description": "Vegetarian burger",
+      "ingredients": "veggie-patty, tomato, lettuce",
+      "awareness": "soy, gluten",
+      "calories": 600,
+      "price": 5.99,
+      "category": "burger"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 6,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/desserts_imgs/brownies.jpg",
+      "name": "Brownies",
+      "description": "Chocolate brownies",
+      "ingredients": "chocolate, eggs, flour",
+      "awareness": "dairy, gluten, eggs",
+      "calories": 420,
+      "price": 2.99,
+      "category": "dessert"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 7,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/desserts_imgs/cake.jpg",
+      "name": "Cake",
+      "description": "Slice of cake",
+      "ingredients": "flour, eggs, sugar",
+      "awareness": "gluten, eggs, dairy",
+      "calories": 390,
+      "price": 3.49,
+      "category": "dessert"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 8,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/desserts_imgs/cookies.jpg",
+      "name": "Cookies",
+      "description": "Chocolate chip cookies",
+      "ingredients": "flour, chocolate, butter",
+      "awareness": "gluten, dairy",
+      "calories": 300,
+      "price": 1.99,
+      "category": "dessert"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 9,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/desserts_imgs/cupcake.jpg",
+      "name": "Cupcake",
+      "description": "Vanilla cupcake",
+      "ingredients": "flour, eggs, cream",
+      "awareness": "gluten, dairy, eggs",
+      "calories": 310,
+      "price": 2.49,
+      "category": "dessert"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 10,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/desserts_imgs/donuts.jpg",
+      "name": "Donuts",
+      "description": "Glazed donuts",
+      "ingredients": "flour, sugar, milk",
+      "awareness": "gluten, dairy",
+      "calories": 330,
+      "price": 2.19,
+      "category": "dessert"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 11,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/desserts_imgs/ice-cream.jpg",
+      "name": "Ice-Cream",
+      "description": "Vanilla ice cream",
+      "ingredients": "milk, sugar, vanilla",
+      "awareness": "dairy",
+      "calories": 290,
+      "price": 2.99,
+      "category": "dessert"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 12,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/drinks-imgs/coke.jpg",
+      "name": "Coke",
+      "description": "Carbonated soft drink",
+      "ingredients": "carbonated-water, sugar, cola",
+      "awareness": "caffeine",
+      "calories": 140,
+      "price": 1.49,
+      "category": "drink"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 13,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/drinks-imgs/dr-pepper.jpg",
+      "name": "Dr-peper",
+      "description": "Flavored soda",
+      "ingredients": "carbonated-water, sugar, spice",
+      "awareness": "caffeine",
+      "calories": 150,
+      "price": 1.49,
+      "category": "drink"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 14,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/drinks-imgs/iced-tea.jpg",
+      "name": "Iced-ta",
+      "description": "Cold sweet tea",
+      "ingredients": "tea, sugar, lemon",
+      "awareness": "none",
+      "calories": 120,
+      "price": 1.49,
+      "category": "drink"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 15,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/drinks-imgs/lemonade.jpg",
+      "name": "Lemonade",
+      "description": "Lemon flavored drink",
+      "ingredients": "lemon, sugar, water",
+      "awareness": "none",
+      "calories": 110,
+      "price": 1.49,
+      "category": "drink"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 16,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/drinks-imgs/pepsi.jpg",
+      "name": "Pepsi",
+      "description": "Classic soda",
+      "ingredients": "carbonated-water, sugar, cola",
+      "awareness": "caffeine",
+      "calories": 150,
+      "price": 1.49,
+      "category": "drink"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 17,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/drinks-imgs/sprite.jpg",
+      "name": "Sprit",
+      "description": "Lemon-lime soda",
+      "ingredients": "carbonated-water, sugar, lime",
+      "awareness": "none",
+      "calories": 130,
+      "price": 1.49,
+      "category": "drink"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 18,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/fast_imgs/cheese-fries.jpg",
+      "name": "Cheese-fries",
+      "description": "Fries with melted cheese",
+      "ingredients": "potatoes, cheese, salt",
+      "awareness": "dairy",
+      "calories": 500,
+      "price": 3.99,
+      "category": "fast"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 19,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/fast_imgs/cheese-sticks.jpg",
+      "name": "Cheese-sticks",
+      "description": "Fried cheese sticks",
+      "ingredients": "cheese, breadcrumbs, oil",
+      "awareness": "dairy, gluten",
+      "calories": 450,
+      "price": 3.49,
+      "category": "fast"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 20,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/fast_imgs/chicken-wings.jpg",
+      "name": "chicken-wings",
+      "description": "Spicy chicken wings",
+      "ingredients": "chicken, sauce, garlic",
+      "awareness": "meat",
+      "calories": 600,
+      "price": 5.49,
+      "category": "fast"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 21,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/fast_imgs/fries.jpg",
+      "name": "Fries",
+      "description": "Salted potato fries",
+      "ingredients": "potatoes, oil, salt",
+      "awareness": "none",
+      "calories": 350,
+      "price": 2.49,
+      "category": "fast"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 22,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/fast_imgs/garlic-bread.jpg",
+      "name": "Garlic-bread",
+      "description": "Bread with garlic and butter",
+      "ingredients": "bread, garlic, butter",
+      "awareness": "gluten, dairy",
+      "calories": 380,
+      "price": 2.99,
+      "category": "fast"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 23,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/fast_imgs/jalapeno-poppers.jpg",
+      "name": "Jalapeno-poppers",
+      "description": "Spicy stuffed jalapeños",
+      "ingredients": "jalapeño, cheese, breading",
+      "awareness": "dairy, gluten",
+      "calories": 410,
+      "price": 3.99,
+      "category": "fast"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 24,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/fast_imgs/mozzarella-wings.jpg",
+      "name": "Mozzarella-wings",
+      "description": "Fried wings with mozzarella",
+      "ingredients": "chicken, cheese, breading",
+      "awareness": "dairy, gluten, meat",
+      "calories": 620,
+      "price": 5.99,
+      "category": "fast"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 25,
+    "fields": {
+      "image_link": "https://raw.githubusercontent.com/Yuly2222/parcial_1/refs/heads/main/imgs/fast_imgs/onion-rings.jpg",
+      "name": "Onion-rings",
+      "description": "Fried onion rings",
+      "ingredients": "onion, flour, oil",
+      "awareness": "gluten",
+      "calories": 390,
+      "price": 3.49,
+      "category": "fast"
+    }
+  },
+  {
+    "model": "app1.menuitem",
+    "pk": 26,
+    "fields": {
+      "image_link": "https://img.europapress.es/fotoweb/fotonoticia_20190613080341_1200.jpg",
+      "name": "Marihuana",
+      "description": "Marihuana",
+      "ingredients": "Marihuana",
+      "awareness": "Marihuana",
+      "calories": 620,
+      "price": 5.99,
+      "category": "fast"
+    }
+  }
+]
