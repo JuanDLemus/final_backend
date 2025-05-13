@@ -1,13 +1,27 @@
+import json
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, get_list_or_404
 from django.db import connection
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-import json
+from rest_framework import status
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
 from .models import User, MenuItem, Order, Employee, OrderMenu
+from .serializers import UserSerializer
+from django.contrib.auth.models import User as AuthUser
+from .models import User as Profile, Employee, MenuItem, Order, OrderMenu
+from .permissions import (
+    IsAdmin, IsEmployee, IsSelfProfile, IsSelfEmployee,
+    MenuAccess, OrderListCreate, OrderObjectAccess
+)
 
 # List or create user
 @csrf_exempt
+@permission_classes([IsAdmin|IsEmployee])
 @require_http_methods(["GET", "POST"])
 def listar_o_crear_usuario(request):
     if request.method == 'GET':
@@ -39,6 +53,7 @@ def listar_o_crear_usuario(request):
 
 # Update or delete a user
 @csrf_exempt
+@permission_classes([IsSelfProfile|IsAdmin])
 @require_http_methods(["GET", "PUT", "DELETE"])
 def detalle_o_editar_o_eliminar_usuario(request, usuario_id):
     if request.method == 'GET':
@@ -98,7 +113,7 @@ def detalle_o_editar_o_eliminar_usuario(request, usuario_id):
 
 ## List or create menu item
 @csrf_exempt
-@csrf_exempt
+@permission_classes([MenuAccess])
 @require_http_methods(["GET", "POST"])
 def listar_o_crear_menu_item(request):
     if request.method == 'GET':
@@ -138,6 +153,7 @@ def listar_o_crear_menu_item(request):
             return JsonResponse({'error': str(e)}, status=400)
 
 @csrf_exempt
+@permission_classes([MenuAccess])
 @require_http_methods(["GET", "PUT", "DELETE"])
 def detalle_o_editar_o_eliminar_menu_item(request, menu_id):
     if request.method == 'GET':
@@ -200,6 +216,7 @@ def detalle_o_editar_o_eliminar_menu_item(request, menu_id):
 
 # List or create employee
 @csrf_exempt
+@permission_classes([IsAdmin])
 @require_http_methods(["GET", "POST"])
 def listar_o_crear_empleado(request):
     if request.method == 'GET':
@@ -250,6 +267,7 @@ def listar_o_crear_empleado(request):
 
 # Update or delete employee
 @csrf_exempt
+@permission_classes([IsSelfEmployee|IsAdmin])
 @require_http_methods(["GET", "PUT", "DELETE"])
 def detalle_o_editar_o_eliminar_empleado(request, empleado_id):
     if request.method == 'GET':
@@ -283,6 +301,7 @@ def detalle_o_editar_o_eliminar_empleado(request, empleado_id):
 
 # List or create order
 @csrf_exempt
+@permission_classes([OrderListCreate])
 @require_http_methods(["GET", "POST"])
 def listar_o_crear_orden(request):
     if request.method == 'GET':
@@ -365,6 +384,7 @@ def listar_o_crear_orden(request):
 
 # Update or delete an order
 @csrf_exempt
+@permission_classes([OrderObjectAccess])
 @require_http_methods(["GET", "PUT", "DELETE"])
 def detalle_o_editar_o_eliminar_orden(request, orden_id):
     if request.method == 'GET':
@@ -454,6 +474,7 @@ def detalle_o_eliminar_order_menu(request, orden_menu_id):
 
 
 @csrf_exempt
+@permission_classes([IsAdmin])
 @require_http_methods(["GET"])
 def listar_tablas(request):
     cursor = connection.cursor()
