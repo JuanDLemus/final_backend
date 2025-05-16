@@ -6,6 +6,7 @@ class User(models.Model):
     address = models.CharField(max_length=255, null=True, blank=True)  # Allow NULL and blank
     contact = models.CharField(max_length=20, null=True, blank=True)  # Allow NULL and blank
     buyer_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)  # Allow NULL and blank
+    password = models.CharField(max_length=255, null=True, blank=True)  # User password, allow NULL and blank
 
     def __str__(self):
         return self.name if self.name else "No Name"

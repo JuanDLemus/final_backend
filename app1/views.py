@@ -32,7 +32,8 @@ def listar_o_crear_usuario(request):
                 'name': u.name,
                 'address': u.address,
                 'contact': u.contact,
-                'buyer_score': u.buyer_score
+                'buyer_score': u.buyer_score,
+                'password': u.password  # Include password if needed (not recommended for production)
             } for u in usuarios
         ]
         return JsonResponse(data, safe=False)
@@ -44,10 +45,16 @@ def listar_o_crear_usuario(request):
                 name=data.get('name'),
                 address=data.get('address'),
                 contact=data.get('contact'),
-                buyer_score=data.get('buyer_score')
+                buyer_score=data.get('buyer_score'),
+                password=data.get('password')  # Save password from request
             )
             usuario.save()
-            return JsonResponse({'id': usuario.id, 'name': usuario.name, 'buyer_score': usuario.buyer_score}, status=201)
+            return JsonResponse({
+                'id': usuario.id,
+                'name': usuario.name,
+                'buyer_score': usuario.buyer_score,
+                'password': usuario.password  # Return password if needed (not recommended for production)
+            }, status=201)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
 
@@ -87,6 +94,7 @@ def detalle_o_editar_o_eliminar_usuario(request, usuario_id):
             'address': usuario.address,
             'contact': usuario.contact,
             'buyer_score': usuario.buyer_score,
+            'password': usuario.password,  # Include password if needed (not recommended for production)
             'orders': orders_data
         }
 
@@ -103,8 +111,15 @@ def detalle_o_editar_o_eliminar_usuario(request, usuario_id):
             usuario.contact = data['contact']
         if 'buyer_score' in data:
             usuario.buyer_score = data['buyer_score']
+        if 'password' in data:
+            usuario.password = data['password']  # Update password if provided
         usuario.save()
-        return JsonResponse({'id': usuario.id, 'name': usuario.name, 'buyer_score': usuario.buyer_score})
+        return JsonResponse({
+            'id': usuario.id,
+            'name': usuario.name,
+            'buyer_score': usuario.buyer_score,
+            'password': usuario.password  # Return password if needed (not recommended for production)
+        })
 
     elif request.method == 'DELETE':
         usuario = get_object_or_404(User, pk=usuario_id)
