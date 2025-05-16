@@ -7,11 +7,12 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from .models import User, MenuItem, Order, Employee, OrderMenu
-from .serializers import UserSerializer
+from .serializers import UserSerializer, EmployeeSerializer, MenuItemSerializer, OrderSerializer, OrderMenuSerializer
 from django.contrib.auth.models import User as AuthUser
 from .models import User as Profile, Employee, MenuItem, Order, OrderMenu
 from .permissions import (
@@ -33,7 +34,7 @@ def listar_o_crear_usuario(request):
                 'address': u.address,
                 'contact': u.contact,
                 'buyer_score': u.buyer_score,
-                'password': u.password  # Include password if needed (not recommended for production)
+                'password': u.password 
             } for u in usuarios
         ]
         return JsonResponse(data, safe=False)
@@ -46,14 +47,14 @@ def listar_o_crear_usuario(request):
                 address=data.get('address'),
                 contact=data.get('contact'),
                 buyer_score=data.get('buyer_score'),
-                password=data.get('password')  # Save password from request
+                password=data.get('password') 
             )
             usuario.save()
             return JsonResponse({
                 'id': usuario.id,
                 'name': usuario.name,
                 'buyer_score': usuario.buyer_score,
-                'password': usuario.password  # Return password if needed (not recommended for production)
+                'password': usuario.password
             }, status=201)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
@@ -94,7 +95,7 @@ def detalle_o_editar_o_eliminar_usuario(request, usuario_id):
             'address': usuario.address,
             'contact': usuario.contact,
             'buyer_score': usuario.buyer_score,
-            'password': usuario.password,  # Include password if needed (not recommended for production)
+            'password': usuario.password,
             'orders': orders_data
         }
 
@@ -112,13 +113,13 @@ def detalle_o_editar_o_eliminar_usuario(request, usuario_id):
         if 'buyer_score' in data:
             usuario.buyer_score = data['buyer_score']
         if 'password' in data:
-            usuario.password = data['password']  # Update password if provided
+            usuario.password = data['password'] 
         usuario.save()
         return JsonResponse({
             'id': usuario.id,
             'name': usuario.name,
             'buyer_score': usuario.buyer_score,
-            'password': usuario.password  # Return password if needed (not recommended for production)
+            'password': usuario.password  
         })
 
     elif request.method == 'DELETE':
@@ -160,7 +161,7 @@ def listar_o_crear_menu_item(request):
                 awareness=data.get('awareness', ''),
                 category=data.get('category', ''),
                 calories=data.get('calories'),
-                image_link=data.get('image_link', '')  # Handle image link during POST
+                image_link=data.get('image_link', '') 
             )
             item.save()
             return JsonResponse({'id': item.id, 'name': item.name, 'price': item.price, 'category': item.category, 'calories': item.calories, 'image_link': item.image_link}, status=201)
@@ -187,7 +188,7 @@ def detalle_o_editar_o_eliminar_menu_item(request, menu_id):
             'category': menu_item.category,
             'calories': menu_item.calories,
             'image_link': menu_item.image_link,
-            'used_in_orders': ordenes_count  # Agregado el conteo de órdenes
+            'used_in_orders': ordenes_count 
         }
         return JsonResponse(data)
 
