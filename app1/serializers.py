@@ -15,6 +15,11 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(raw_password)
         user.save()
         return user
+    
+    def delete(self, *args, **kwargs):
+        # custom deletion logic here, e.g.:
+        print(f"Deleting user {self.name}")
+        super().delete(*args, **kwargs)
 
 class EmployeeSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)

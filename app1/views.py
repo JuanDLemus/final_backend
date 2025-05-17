@@ -20,28 +20,7 @@ from .permissions import (
     IsAdmin, IsEmployee, IsSelfProfile, IsSelfEmployee,
     MenuAccess, OrderListCreate, OrderObjectAccess
 )
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def user_register(request):
-    password = request.data.get('password')
-    if not password:
-        return Response(
-            {"error": "Password is required"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    serializer = UserSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    user = serializer.save()
-    token, _ = Token.objects.get_or_create(user=user)
-
-    return Response(
-        {"token": token.key, "user": serializer.data},
-        status=status.HTTP_201_CREATED
-    )
-
+#############################################################################################################################################################################################################################################################################################################################################################################################
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def user_login(request):
@@ -58,143 +37,58 @@ def user_login(request):
 
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
+#@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def user_profile(request):
     data = UserSerializer(request.user).data
     return Response(
         {"user": data},
         status=status.HTTP_200_OK
     )
-
-
-# ─── EMPLOYEE ENDPOINTS ────────────────────────────────────────────────────────
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def employee_login(request):
-    user_id = request.data.get('user_id')
-    password = request.data.get('password')
-    if not user_id or not password:
-        return Response(
-            {"error": "Both user_id and password are required"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    employee = get_object_or_404(Employee, user__id=user_id)
-    if not employee.has_usable_secret_password():
-        return Response(
-            {"error": "This employee account cannot be logged into"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    if employee.check_secret_password(password):
-        token, _ = Token.objects.get_or_create(user=employee.user)
-        data = EmployeeSerializer(employee).data
-        return Response(
-            {"token": token.key, "employee": data},
-            status=status.HTTP_200_OK
-        )
-
-    return Response(
-        {"error": "Invalid credentials"},
-        status=status.HTTP_401_UNAUTHORIZED
-    )
-
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def employee_register(request):
-    password = request.data.get('password')
-    user_data = request.data.get('user')
-    if not password or not user_data:
-        return Response(
-            {"error": "Both user and password are required"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    # first create the User
-    user_serializer = UserSerializer(data=user_data)
-    if not user_serializer.is_valid():
-        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    user = user_serializer.save()
-    user.set_password(password)
-    user.save()
-
-    # then create the Employee
-    emp_serializer = EmployeeSerializer(data={'user': user.id, **request.data.get('employee', {})})
-    if not emp_serializer.is_valid():
-        user.delete()
-        return Response(emp_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    employee = emp_serializer.save()
-    employee.set_secret_password(password)
-    employee.save()
-
-    token = Token.objects.create(user=user)
-    return Response(
-        {"token": token.key, "employee": EmployeeSerializer(employee).data},
-        status=status.HTTP_201_CREATED
-    )
-
-
-@api_view(['GET'])
+#############################################################################################################################################################################################################################################################################################################################################################################################
+    
+# Listar todos los usuarios o crear uno nuevo
+@api_view(['GET', 'POST'])
 @authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def employee_profile(request):
-    # assuming one-to-one, get the related Employee
-    employee = get_object_or_404(Employee, user=request.user)
-    data = EmployeeSerializer(employee).data
-    return Response(
-        {"employee": data},
-        status=status.HTTP_200_OK
-    )
-
-# List or create user
-@csrf_exempt
-@permission_classes([IsAdmin|IsEmployee])
-@require_http_methods(["GET", "POST"])
+#@permission_classes([IsAdmin|IsEmployee])  # Solo admin o empleados pueden usar
+@permission_classes([AllowAny])
 def listar_o_crear_usuario(request):
     if request.method == 'GET':
         usuarios = User.objects.all()
-        data = [
-            {
-                'id': u.id,
-                'name': u.name,
-                'address': u.address,
-                'contact': u.contact,
-                'buyer_score': u.buyer_score,
-                'password': u.password 
-            } for u in usuarios
-        ]
-        return JsonResponse(data, safe=False)
+        serializer = UserSerializer(usuarios, many=True)
+        # No devolver password, porque está write_only, no aparece en serializer.data
+        return Response(serializer.data)
 
     elif request.method == 'POST':
-        data = json.loads(request.body)
-        try:
-            usuario = User(
-                name=data.get('name'),
-                address=data.get('address'),
-                contact=data.get('contact'),
-                buyer_score=data.get('buyer_score'),
-                password=data.get('password') 
+        password = request.data.get('password')
+        if not password:
+            return Response(
+                {"error": "Password is required"},
+                status=status.HTTP_400_BAD_REQUEST
             )
-            usuario.save()
-            return JsonResponse({
-                'id': usuario.id,
-                'name': usuario.name,
-                'buyer_score': usuario.buyer_score,
-                'password': usuario.password
-            }, status=201)
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=400)
 
-# Update or delete a user
-@csrf_exempt
-@permission_classes([IsSelfProfile|IsAdmin])
-@require_http_methods(["GET", "PUT", "DELETE"])
+        serializer = UserSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        user = serializer.save()
+        token, _ = Token.objects.get_or_create(user=user)
+
+        return Response(
+            {"token": token.key, "user": serializer.data},
+            status=status.HTTP_201_CREATED
+        )
+
+# Detalle, editar o eliminar un usuario
+@api_view(['GET', 'PUT', 'DELETE'])
+@authentication_classes([TokenAuthentication])
+#@permission_classes([IsSelfProfile|IsAdmin])  # El propio usuario o admin
+@permission_classes([AllowAny])
 def detalle_o_editar_o_eliminar_usuario(request, usuario_id):
+    usuario = get_object_or_404(User, pk=usuario_id)
+
     if request.method == 'GET':
-        usuario = get_object_or_404(User, pk=usuario_id)
-        # Buscar órdenes de este usuario
+        # Traer las órdenes y sus items como antes
         orders = Order.objects.filter(user=usuario)
         orders_data = []
         for order in orders:
@@ -208,7 +102,6 @@ def detalle_o_editar_o_eliminar_usuario(request, usuario_id):
                     'subtotal': float(om.menu_item.price * om.quantity) if om.menu_item and om.menu_item.price else None
                 } for om in order_items
             ]
-
             orders_data.append({
                 'order_id': order.id,
                 'datetime': order.datetime,
@@ -217,47 +110,29 @@ def detalle_o_editar_o_eliminar_usuario(request, usuario_id):
                 'items': items_data
             })
 
-        data = {
-            'id': usuario.id,
-            'name': usuario.name,
-            'address': usuario.address,
-            'contact': usuario.contact,
-            'buyer_score': usuario.buyer_score,
-            'password': usuario.password,
-            'orders': orders_data
-        }
+        user_data = UserSerializer(usuario).data
+        user_data['orders'] = orders_data
 
-        return JsonResponse(data, safe=False)
+        return Response(user_data)
 
     elif request.method == 'PUT':
-        usuario = get_object_or_404(User, pk=usuario_id)
-        data = json.loads(request.body)
-        if 'name' in data:
-            usuario.name = data['name']
-        if 'address' in data:
-            usuario.address = data['address']
-        if 'contact' in data:
-            usuario.contact = data['contact']
-        if 'buyer_score' in data:
-            usuario.buyer_score = data['buyer_score']
-        if 'password' in data:
-            usuario.password = data['password'] 
-        usuario.save()
-        return JsonResponse({
-            'id': usuario.id,
-            'name': usuario.name,
-            'buyer_score': usuario.buyer_score,
-            'password': usuario.password  
-        })
+        serializer = UserSerializer(usuario, data=request.data, partial=True)
+        if serializer.is_valid():
+            # Importante: Si viene password, el serializer setea bien con set_password()
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     elif request.method == 'DELETE':
-        usuario = get_object_or_404(User, pk=usuario_id)
         usuario.delete()
-        return JsonResponse({'message': 'User deleted'})
-
+        return Response({'message': 'User deleted'}, status=status.HTTP_204_NO_CONTENT)
+    
+#############################################################################################################################################################################################################################################################################################################################################################################################
 ## List or create menu item
 @csrf_exempt
-@permission_classes([MenuAccess])
+#@permission_classes([MenuAccess])
+@permission_classes([AllowAny])
 @require_http_methods(["GET", "POST"])
 def listar_o_crear_menu_item(request):
     if request.method == 'GET':
@@ -297,7 +172,8 @@ def listar_o_crear_menu_item(request):
             return JsonResponse({'error': str(e)}, status=400)
 
 @csrf_exempt
-@permission_classes([MenuAccess])
+#@permission_classes([MenuAccess])
+@permission_classes([AllowAny])
 @require_http_methods(["GET", "PUT", "DELETE"])
 def detalle_o_editar_o_eliminar_menu_item(request, menu_id):
     if request.method == 'GET':
@@ -358,9 +234,11 @@ def detalle_o_editar_o_eliminar_menu_item(request, menu_id):
         menu_item.delete()
         return JsonResponse({'message': 'Menu item deleted'})
 
+#############################################################################################################################################################################################################################################################################################################################################################################################
 # List or create employee
 @csrf_exempt
-@permission_classes([IsAdmin])
+#@permission_classes([IsAdmin])
+@permission_classes([AllowAny])
 @require_http_methods(["GET", "POST"])
 def listar_o_crear_empleado(request):
     if request.method == 'GET':
@@ -370,29 +248,39 @@ def listar_o_crear_empleado(request):
                 'id': e.id,
                 'user_id': e.user.id if e.user else None,
                 'user_name': e.user.name if e.user else None,
-                'secret_password': e.secret_password,
+                'password': e.secret_password,
                 'image': e.image.url if e.image else None,
                 'role': e.role,
                 'description': e.description
             } for e in empleados
         ]
         return JsonResponse(data, safe=False)
-
+    
     elif request.method == 'POST':
         data = json.loads(request.body)
-        try:
-            # Crear el User primero con los datos proporcionados
-            usuario = User.objects.create(
-                name=data.get('name'),
-                address=data.get('address'),
-                contact=data.get('contact'),
-                buyer_score=data.get('buyer_score', 0)
-            )
+        password = data.get('password')
+        if not password:
+            return JsonResponse({"error": "Password is required"}, status=400)
 
-            # Luego crear el empleado usando el user creado
+        user_data = {
+            'name': data.get('name'),
+            'address': data.get('address'),
+            'contact': data.get('contact'),
+            'buyer_score': data.get('buyer_score', 0),
+            'password': password
+        }
+        user_serializer = UserSerializer(data=user_data)
+        if not user_serializer.is_valid():
+            return JsonResponse(user_serializer.errors, status=400)
+
+        user = user_serializer.save()
+        # Create token for the user
+        token, _ = Token.objects.get_or_create(user=user)
+
+        try:
             empleado = Employee(
-                user=usuario,
-                secret_password=data.get('secret_password'),
+                user=user,
+                secret_password=data.get('password'),
                 image=data.get('image'),
                 role=data.get('role'),
                 description=data.get('description')
@@ -400,18 +288,22 @@ def listar_o_crear_empleado(request):
             empleado.save()
 
             return JsonResponse({
+                'token': token.key,              # <-- token here
                 'employee_id': empleado.id,
-                'user_id': empleado.user.id,
-                'name': empleado.user.name,
+                'user_id': user.id,
+                'name': user.name,
                 'role': empleado.role
             }, status=201)
         except Exception as e:
+            user.delete()
             return JsonResponse({'error': str(e)}, status=400)
+
 
 
 # Update or delete employee
 @csrf_exempt
-@permission_classes([IsSelfEmployee|IsAdmin])
+#@permission_classes([IsSelfEmployee|IsAdmin])
+@permission_classes([AllowAny])
 @require_http_methods(["GET", "PUT", "DELETE"])
 def detalle_o_editar_o_eliminar_empleado(request, empleado_id):
     if request.method == 'GET':
@@ -420,7 +312,7 @@ def detalle_o_editar_o_eliminar_empleado(request, empleado_id):
             'id': empleado.id,
             'user_id': empleado.user.id if empleado.user else None,
             'user_name': empleado.user.name if empleado.user else None,
-            'secret_password': empleado.secret_password,
+            'password': empleado.secret_password,
             'image': empleado.image.url if empleado.image else None,
             'role': empleado.role,
             'description': empleado.description
@@ -443,9 +335,11 @@ def detalle_o_editar_o_eliminar_empleado(request, empleado_id):
         empleado.delete()
         return JsonResponse({'message': 'Employee deleted'})
 
+#############################################################################################################################################################################################################################################################################################################################################################################################
 # List or create order
 @csrf_exempt
-@permission_classes([OrderListCreate])
+#@permission_classes([OrderListCreate])
+@permission_classes([AllowAny])
 @require_http_methods(["GET", "POST"])
 def listar_o_crear_orden(request):
     if request.method == 'GET':
@@ -528,7 +422,8 @@ def listar_o_crear_orden(request):
 
 # Update or delete an order
 @csrf_exempt
-@permission_classes([OrderObjectAccess])
+#@permission_classes([OrderObjectAccess])
+@permission_classes([AllowAny])
 @require_http_methods(["GET", "PUT", "DELETE"])
 def detalle_o_editar_o_eliminar_orden(request, orden_id):
     if request.method == 'GET':
@@ -566,6 +461,7 @@ def detalle_o_editar_o_eliminar_orden(request, orden_id):
         order.delete()
         return JsonResponse({'message': 'Order deleted'})
 
+#############################################################################################################################################################################################################################################################################################################################################################################################
 # List or create order menu
 @csrf_exempt
 @require_http_methods(["GET", "POST"])
@@ -617,8 +513,10 @@ def detalle_o_eliminar_order_menu(request, orden_menu_id):
         return JsonResponse({'message': 'Order menu item deleted'})
 
 
+#############################################################################################################################################################################################################################################################################################################################################################################################
 @csrf_exempt
-@permission_classes([IsAdmin])
+#@permission_classes([IsAdmin])
+@permission_classes([AllowAny])
 @require_http_methods(["GET"])
 def listar_tablas(request):
     cursor = connection.cursor()
