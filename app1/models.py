@@ -1,4 +1,9 @@
 from django.db import models
+from django.contrib.auth.hashers import (
+    make_password,
+    check_password,
+    is_password_usable,
+)
 
 class User(models.Model):
     id = models.AutoField(primary_key=True)
@@ -7,20 +12,49 @@ class User(models.Model):
     contact = models.CharField(max_length=20, null=True, blank=True)  # Allow NULL and blank
     buyer_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)  # Allow NULL and blank
     password = models.CharField(max_length=255, null=True, blank=True)  # User password, allow NULL and blank
-
+    
     def __str__(self):
         return self.name if self.name else "No Name"
 
+    def set_password(self, raw_password):
+        """Hashes and sets the password."""
+        self.password = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        """Checks if the provided password matches the stored hash."""
+        return check_password(raw_password, self.password)
+
+    def set_unusable_password(self):
+        """Marks this user as having no password."""
+        self.password = make_password(None)
+
+    def has_usable_password(self):
+        """Returns False if set_unusable_password was called."""
+        return is_password_usable(self.password)
+
 class Employee(models.Model):
     id = models.AutoField(primary_key=True)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)  # Allow NULL and blank
-    secret_password = models.CharField(max_length=255, default="default_password", null=True, blank=True)  # Allow NULL and blank
-    image = models.ImageField(upload_to='employee_images/', null=True, blank=True)  # Allow NULL and blank
-    role = models.CharField(max_length=255, null=True, blank=True)  # Allow NULL and blank
-    description = models.TextField(null=True, blank=True)  # Allow NULL and blank
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    secret_password = models.CharField(max_length=255, default="default_password", null=True, blank=True)
+    image = models.ImageField(upload_to='employee_images/', null=True, blank=True)
+    role = models.CharField(max_length=255, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.user.name if self.user else 'No User'} - {self.role if self.role else 'No Role'}"
+
+    def set_secret_password(self, raw_password):
+        self.secret_password = make_password(raw_password)
+
+    def check_secret_password(self, raw_password):
+        return check_password(raw_password, self.secret_password)
+
+    def set_unusable_secret_password(self):
+        self.secret_password = make_password(None)
+
+    def has_usable_secret_password(self):
+        return is_password_usable(self.secret_password)
+    
 class MenuItem(models.Model):
     CATEGORY_CHOICES = [
         ('burger', 'Burger'),

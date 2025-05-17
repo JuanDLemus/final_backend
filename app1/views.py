@@ -20,6 +20,49 @@ from .permissions import (
     MenuAccess, OrderListCreate, OrderObjectAccess
 )
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    if not username or not password:
+        return Response({"error": "Username and password required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = get_object_or_404(User, name=username)  # Adjust to your username field; here using 'name'
+    if user.check_password(password):
+        token, _ = Token.objects.get_or_create(user=user)
+        serializer = UserSerializer(user)
+        return Response({"token": token.key, "user": serializer.data}, status=status.HTTP_200_OK)
+
+    return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register(request):
+    password = request.data.get('password')
+    if not password:
+        return Response({"error": "Password is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    serializer = UserSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+        user.set_password(password)
+        user.save()
+
+        token = Token.objects.create(user=user)
+        return Response({"token": token.key, "user": serializer.data}, status=status.HTTP_201_CREATED)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def profile(request):
+    serializer = UserSerializer(request.user)
+    return Response({"user": serializer.data}, status=status.HTTP_200_OK)
+
 # List or create user
 @csrf_exempt
 @permission_classes([IsAdmin|IsEmployee])

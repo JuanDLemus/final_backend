@@ -26,7 +26,7 @@ urlpatterns = [
     # Endpoint to list all tables in the database
     path('tablas/', views.listar_tablas, name='listar_tablas'),
 
-    #re_path('login/', views.login),
-    #re_path('register/', views.register),
-    #re_path('profile/', views.profile),
+    re_path('login/', views.login),
+    re_path('register/', views.register),
+    re_path('profile/', views.profile),
 ]
