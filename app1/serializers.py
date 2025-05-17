@@ -1,16 +1,20 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User as DjangoUser
 from .models import User, Employee, MenuItem, Order, OrderMenu
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DjangoUser
-        fields = ['id', 'username', 'email', 'first_name', 'last_name']
 
-class User2Serializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+
     class Meta:
         model = User
         fields = ['id', 'name', 'address', 'contact', 'buyer_score', 'password']
+
+    def create(self, validated_data):
+        raw_password = validated_data.pop('password')
+        user = User(**validated_data)
+        user.set_password(raw_password)
+        user.save()
+        return user
 
 class EmployeeSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)

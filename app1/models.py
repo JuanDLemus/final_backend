@@ -4,33 +4,41 @@ from django.contrib.auth.hashers import (
     check_password,
     is_password_usable,
 )
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
+from django.db import models
 
-class User(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255, null=True, blank=True)  # Allow NULL and blank
-    address = models.CharField(max_length=255, null=True, blank=True)  # Allow NULL and blank
-    contact = models.CharField(max_length=20, null=True, blank=True)  # Allow NULL and blank
-    buyer_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)  # Allow NULL and blank
-    password = models.CharField(max_length=255, null=True, blank=True)  # User password, allow NULL and blank
-    
+class CustomUserManager(BaseUserManager):
+    def create_user(self, name, password=None, **extra_fields):
+        if not name:
+            raise ValueError('El nombre es obligatorio')
+        user = self.model(name=name, **extra_fields)
+        user.set_password(password)
+        user.save()
+        return user
+
+    def create_superuser(self, name, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        return self.create_user(name, password, **extra_fields)
+
+class User(AbstractBaseUser, PermissionsMixin):
+    name = models.CharField(max_length=255, unique=True)
+    address = models.CharField(max_length=255, null=True, blank=True)
+    contact = models.CharField(max_length=20, null=True, blank=True)
+    buyer_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+
+    # last_login lo incluye automáticamente AbstractBaseUser
+
+    USERNAME_FIELD = 'name'
+    REQUIRED_FIELDS = []
+
+    objects = CustomUserManager()
+
     def __str__(self):
-        return self.name if self.name else "No Name"
-
-    def set_password(self, raw_password):
-        """Hashes and sets the password."""
-        self.password = make_password(raw_password)
-
-    def check_password(self, raw_password):
-        """Checks if the provided password matches the stored hash."""
-        return check_password(raw_password, self.password)
-
-    def set_unusable_password(self):
-        """Marks this user as having no password."""
-        self.password = make_password(None)
-
-    def has_usable_password(self):
-        """Returns False if set_unusable_password was called."""
-        return is_password_usable(self.password)
+        return self.name
 
 class Employee(models.Model):
     id = models.AutoField(primary_key=True)

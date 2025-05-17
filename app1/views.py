@@ -11,6 +11,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
+from django.contrib.auth import authenticate
 from .models import User, MenuItem, Order, Employee, OrderMenu
 from .serializers import UserSerializer, EmployeeSerializer, MenuItemSerializer, OrderSerializer, OrderMenuSerializer
 from django.contrib.auth.models import User as AuthUser
@@ -19,49 +20,133 @@ from .permissions import (
     IsAdmin, IsEmployee, IsSelfProfile, IsSelfEmployee,
     MenuAccess, OrderListCreate, OrderObjectAccess
 )
-
 @api_view(['POST'])
 @permission_classes([AllowAny])
-def login(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
-    if not username or not password:
-        return Response({"error": "Username and password required"}, status=status.HTTP_400_BAD_REQUEST)
-
-    user = get_object_or_404(User, name=username)  # Adjust to your username field; here using 'name'
-    if user.check_password(password):
-        token, _ = Token.objects.get_or_create(user=user)
-        serializer = UserSerializer(user)
-        return Response({"token": token.key, "user": serializer.data}, status=status.HTTP_200_OK)
-
-    return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def register(request):
+def user_register(request):
     password = request.data.get('password')
     if not password:
-        return Response({"error": "Password is required"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"error": "Password is required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
     serializer = UserSerializer(data=request.data)
-    if serializer.is_valid():
-        user = serializer.save()
-        user.set_password(password)
-        user.save()
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        token = Token.objects.create(user=user)
-        return Response({"token": token.key, "user": serializer.data}, status=status.HTTP_201_CREATED)
+    user = serializer.save()
+    token, _ = Token.objects.get_or_create(user=user)
 
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response(
+        {"token": token.key, "user": serializer.data},
+        status=status.HTTP_201_CREATED
+    )
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def user_login(request):
+    name = request.data.get('name')
+    password = request.data.get('password')
+
+    user = authenticate(username=name, password=password)
+    if user is not None:
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response({"token": token.key})
+    else:
+        return Response({"error": "Invalid credentials"}, status=400)
 
 
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def profile(request):
-    serializer = UserSerializer(request.user)
-    return Response({"user": serializer.data}, status=status.HTTP_200_OK)
+def user_profile(request):
+    data = UserSerializer(request.user).data
+    return Response(
+        {"user": data},
+        status=status.HTTP_200_OK
+    )
+
+
+# ─── EMPLOYEE ENDPOINTS ────────────────────────────────────────────────────────
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def employee_login(request):
+    user_id = request.data.get('user_id')
+    password = request.data.get('password')
+    if not user_id or not password:
+        return Response(
+            {"error": "Both user_id and password are required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    employee = get_object_or_404(Employee, user__id=user_id)
+    if not employee.has_usable_secret_password():
+        return Response(
+            {"error": "This employee account cannot be logged into"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if employee.check_secret_password(password):
+        token, _ = Token.objects.get_or_create(user=employee.user)
+        data = EmployeeSerializer(employee).data
+        return Response(
+            {"token": token.key, "employee": data},
+            status=status.HTTP_200_OK
+        )
+
+    return Response(
+        {"error": "Invalid credentials"},
+        status=status.HTTP_401_UNAUTHORIZED
+    )
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def employee_register(request):
+    password = request.data.get('password')
+    user_data = request.data.get('user')
+    if not password or not user_data:
+        return Response(
+            {"error": "Both user and password are required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # first create the User
+    user_serializer = UserSerializer(data=user_data)
+    if not user_serializer.is_valid():
+        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    user = user_serializer.save()
+    user.set_password(password)
+    user.save()
+
+    # then create the Employee
+    emp_serializer = EmployeeSerializer(data={'user': user.id, **request.data.get('employee', {})})
+    if not emp_serializer.is_valid():
+        user.delete()
+        return Response(emp_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    employee = emp_serializer.save()
+    employee.set_secret_password(password)
+    employee.save()
+
+    token = Token.objects.create(user=user)
+    return Response(
+        {"token": token.key, "employee": EmployeeSerializer(employee).data},
+        status=status.HTTP_201_CREATED
+    )
+
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def employee_profile(request):
+    # assuming one-to-one, get the related Employee
+    employee = get_object_or_404(Employee, user=request.user)
+    data = EmployeeSerializer(employee).data
+    return Response(
+        {"employee": data},
+        status=status.HTTP_200_OK
+    )
 
 # List or create user
 @csrf_exempt
