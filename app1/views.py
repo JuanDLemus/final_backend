@@ -34,7 +34,6 @@ def user_login(request):
     else:
         return Response({"error": "Invalid credentials"}, status=400)
 
-
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
 #@permission_classes([IsAuthenticated])
@@ -515,8 +514,8 @@ def detalle_o_eliminar_order_menu(request, orden_menu_id):
 
 #############################################################################################################################################################################################################################################################################################################################################################################################
 @csrf_exempt
-#@permission_classes([IsAdmin])
-@permission_classes([AllowAny])
+@permission_classes([IsAdmin])
+#@permission_classes([AllowAny])
 @require_http_methods(["GET"])
 def listar_tablas(request):
     cursor = connection.cursor()
