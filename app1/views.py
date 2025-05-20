@@ -140,7 +140,6 @@ def listar_o_crear_empleado(request):
                 'id': e.id,
                 'user_id': e.user.id if e.user else None,
                 'user_name': e.user.name if e.user else None,
-                'password': e.secret_password,
                 'image': e.image.url if e.image else None,
                 'role': e.role,
                 'description': e.description
@@ -172,7 +171,6 @@ def listar_o_crear_empleado(request):
         try:
             empleado = Employee(
                 user=user,
-                secret_password=data.get('password'),
                 image=data.get('image'),
                 role=data.get('role'),
                 description=data.get('description')
@@ -204,7 +202,6 @@ def detalle_o_editar_o_eliminar_empleado(request, empleado_id):
             'id': empleado.id,
             'user_id': empleado.user.id if empleado.user else None,
             'user_name': empleado.user.name if empleado.user else None,
-            'password': empleado.secret_password,
             'image': empleado.image.url if empleado.image else None,
             'role': empleado.role,
             'description': empleado.description

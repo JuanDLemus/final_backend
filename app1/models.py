@@ -1,11 +1,19 @@
 from django.db import models
-from django.contrib.auth.hashers import (
-    make_password,
-    check_password,
-    is_password_usable,
-)
+from django.db.models import Max
+from django.contrib.auth.hashers import make_password, check_password, is_password_usable
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
-from django.db import models
+
+class NextIDMixin(models.Model):
+    id = models.PositiveIntegerField(primary_key=True, editable=False)
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        if self._state.adding and self.id is None:
+            max_id = self.__class__.objects.aggregate(max_id=Max('id'))['max_id'] or 0
+            self.id = max_id + 1
+        super().save(*args, **kwargs)
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, name, password=None, **extra_fields):
@@ -30,8 +38,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
-    # last_login lo incluye automáticamente AbstractBaseUser
-
     USERNAME_FIELD = 'name'
     REQUIRED_FIELDS = []
 
@@ -40,8 +46,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.name
 
-class Employee(models.Model):
-    id = models.AutoField(primary_key=True)
+class Employee(NextIDMixin):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     image = models.ImageField(upload_to='employee_images/', null=True, blank=True)
     role = models.CharField(max_length=255, null=True, blank=True)
@@ -49,17 +54,16 @@ class Employee(models.Model):
 
     def __str__(self):
         return f"{self.user.name if self.user else 'No User'} - {self.role if self.role else 'No Role'}"
-    
-class MenuItem(models.Model):
+
+class MenuItem(NextIDMixin):
     CATEGORY_CHOICES = [
         ('burger', 'Burger'),
         ('dessert', 'Dessert'),
         ('drink', 'Drink'),
         ('fast', 'Fast Food')
     ]
-    
-    id = models.AutoField(primary_key=True)
-    image_link = models.URLField(max_length=255, null=True, blank=True)  # Allow NULL and blank
+
+    image_link = models.URLField(max_length=255, null=True, blank=True)
     name = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     ingredients = models.TextField(null=True, blank=True)
@@ -71,20 +75,19 @@ class MenuItem(models.Model):
     def __str__(self):
         return self.name if self.name else "No Name"
 
-class Order(models.Model):
-    id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)  # Allow NULL and blank
-    datetime = models.DateTimeField(null=True, blank=True)  # Allow NULL and blank
-    total_price = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)  # Allow NULL and blank
-    status = models.CharField(max_length=20, choices=[('delivered', 'Delivered'), ('pending', 'Pending')], null=True, blank=True)  # Allow NULL and blank
+class Order(NextIDMixin):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    datetime = models.DateTimeField(null=True, blank=True)
+    total_price = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=[('delivered', 'Delivered'), ('pending', 'Pending')], null=True, blank=True)
 
     def __str__(self):
         return f"Order {self.id} for {self.user.name if self.user else 'No User'}"
 
 class OrderMenu(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True, blank=True)  # Allow NULL and blank
-    menu_item = models.ForeignKey(MenuItem, on_delete=models.CASCADE, null=True, blank=True)  # Allow NULL and blank
-    quantity = models.PositiveIntegerField(null=True, blank=True)  # Allow NULL and blank
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True, blank=True)
+    menu_item = models.ForeignKey(MenuItem, on_delete=models.CASCADE, null=True, blank=True)
+    quantity = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         unique_together = ('order', 'menu_item')
