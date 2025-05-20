@@ -333,7 +333,9 @@ def listar_o_crear_orden(request):
                 {
                     'menu_item_id': om.menu_item.id,
                     'menu_item_name': om.menu_item.name,
-                    'quantity': om.quantity
+                    'menu_item_price': float(om.menu_item.price),
+                    'quantity': om.quantity,
+                    'subtotal': float(om.menu_item.price * om.quantity)
                 } for om in order_items
             ]
 
@@ -342,7 +344,7 @@ def listar_o_crear_orden(request):
                 'user_id': order.user.id if order.user else None,
                 'user_name': order.user.name if order.user else None,
                 'datetime': order.datetime,
-                'total_price': order.total_price,
+                'total_price': float(order.total_price),
                 'status': order.status,
                 'items': items_data
             })
@@ -412,7 +414,6 @@ def detalle_o_editar_o_eliminar_orden(request, orden_id):
     user = request.user
     order = get_object_or_404(Order, pk=orden_id)
 
-    # Restrict GET to owner or employee/admin
     if request.method == 'GET':
         if order.user != user and not hasattr(user, 'employee') and not user.is_staff:
             return JsonResponse({'error': 'Forbidden'}, status=403)
@@ -422,7 +423,9 @@ def detalle_o_editar_o_eliminar_orden(request, orden_id):
             {
                 'menu_item_id': om.menu_item.id,
                 'menu_item_name': om.menu_item.name,
-                'quantity': om.quantity
+                'menu_item_price': float(om.menu_item.price),
+                'quantity': om.quantity,
+                'subtotal': float(om.menu_item.price * om.quantity)
             } for om in order_items
         ]
 
@@ -431,7 +434,7 @@ def detalle_o_editar_o_eliminar_orden(request, orden_id):
             'user_id': order.user.id if order.user else None,
             'user_name': order.user.name if order.user else None,
             'datetime': order.datetime,
-            'total_price': order.total_price,
+            'total_price': float(order.total_price),
             'status': order.status,
             'items': items_data
         }
@@ -450,7 +453,7 @@ def detalle_o_editar_o_eliminar_orden(request, orden_id):
             'id': order.id,
             'status': order.status,
             'user_id': order.user.id,
-            'total_price': order.total_price
+            'total_price': float(order.total_price)
         })
 
     elif request.method == 'DELETE':
