@@ -1,4 +1,0 @@
-from django.db import connection
-
-with connection.cursor() as cursor:
-    cursor.execute("CREATE TABLE app1_user_user_permissions (id SERIAL PRIMARY KEY,user_id INTEGER NOT NULL REFERENCES app1_user(id) ON DELETE CASCADE,group_id INTEGER NOT NULL REFERENCES auth_group(id) ON DELETE CASCADE,UNIQUE(user_id, group_id));")

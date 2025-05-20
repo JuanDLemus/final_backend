@@ -1,6 +1,5 @@
 from django.db import models
 from django.db.models import Max
-from django.contrib.auth.hashers import make_password, check_password, is_password_usable
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 
 class NextIDMixin(models.Model):
@@ -29,16 +28,17 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_superuser', True)
         return self.create_user(name, password, **extra_fields)
 
-class User(AbstractBaseUser, PermissionsMixin):
-    name = models.CharField(max_length=255, unique=True)
-    address = models.CharField(max_length=255, null=True, blank=True)
-    contact = models.CharField(max_length=20, null=True, blank=True)
+# ← Here we mix in NextIDMixin!
+class User(NextIDMixin, AbstractBaseUser, PermissionsMixin):
+    name        = models.CharField(max_length=255, unique=True)
+    address     = models.CharField(max_length=255, null=True, blank=True)
+    contact     = models.CharField(max_length=20,  null=True, blank=True)
     buyer_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
+    is_staff  = models.BooleanField(default=False)
 
-    USERNAME_FIELD = 'name'
+    USERNAME_FIELD  = 'name'
     REQUIRED_FIELDS = []
 
     objects = CustomUserManager()
