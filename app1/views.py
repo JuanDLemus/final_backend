@@ -44,8 +44,7 @@ def user_profile(request):
         {"user": data},
         status=status.HTTP_200_OK
     )
-#############################################################################################################################################################################################################################################################################################################################################################################################
-    
+############################################################################################################################################################################################################################################################################################################################################################################################# 
 # Listar todos los usuarios o crear uno nuevo
 @api_view(['GET', 'POST'])
 @authentication_classes([TokenAuthentication])
@@ -126,6 +125,107 @@ def detalle_o_editar_o_eliminar_usuario(request, usuario_id):
     elif request.method == 'DELETE':
         usuario.delete()
         return Response({'message': 'User deleted'}, status=status.HTTP_204_NO_CONTENT)
+    
+#############################################################################################################################################################################################################################################################################################################################################################################################
+# List or create employee
+@csrf_exempt
+#@permission_classes([IsAdmin])
+@permission_classes([AllowAny])
+@require_http_methods(["GET", "POST"])
+def listar_o_crear_empleado(request):
+    if request.method == 'GET':
+        empleados = Employee.objects.select_related('user').all()
+        data = [
+            {
+                'id': e.id,
+                'user_id': e.user.id if e.user else None,
+                'user_name': e.user.name if e.user else None,
+                'password': e.secret_password,
+                'image': e.image.url if e.image else None,
+                'role': e.role,
+                'description': e.description
+            } for e in empleados
+        ]
+        return JsonResponse(data, safe=False)
+    
+    elif request.method == 'POST':
+        data = json.loads(request.body)
+        password = data.get('password')
+        if not password:
+            return JsonResponse({"error": "Password is required"}, status=400)
+
+        user_data = {
+            'name': data.get('name'),
+            'address': data.get('address'),
+            'contact': data.get('contact'),
+            'buyer_score': data.get('buyer_score', 0),
+            'password': password
+        }
+        user_serializer = UserSerializer(data=user_data)
+        if not user_serializer.is_valid():
+            return JsonResponse(user_serializer.errors, status=400)
+
+        user = user_serializer.save()
+        # Create token for the user
+        token, _ = Token.objects.get_or_create(user=user)
+
+        try:
+            empleado = Employee(
+                user=user,
+                secret_password=data.get('password'),
+                image=data.get('image'),
+                role=data.get('role'),
+                description=data.get('description')
+            )
+            empleado.save()
+
+            return JsonResponse({
+                'token': token.key,              # <-- token here
+                'employee_id': empleado.id,
+                'user_id': user.id,
+                'name': user.name,
+                'role': empleado.role
+            }, status=201)
+        except Exception as e:
+            user.delete()
+            return JsonResponse({'error': str(e)}, status=400)
+
+
+
+# Update or delete employee
+@csrf_exempt
+#@permission_classes([IsSelfEmployee|IsAdmin])
+@permission_classes([AllowAny])
+@require_http_methods(["GET", "PUT", "DELETE"])
+def detalle_o_editar_o_eliminar_empleado(request, empleado_id):
+    if request.method == 'GET':
+        empleado = get_object_or_404(Employee, pk=empleado_id)
+        data = {
+            'id': empleado.id,
+            'user_id': empleado.user.id if empleado.user else None,
+            'user_name': empleado.user.name if empleado.user else None,
+            'password': empleado.secret_password,
+            'image': empleado.image.url if empleado.image else None,
+            'role': empleado.role,
+            'description': empleado.description
+        }
+        return JsonResponse(data)
+
+
+    elif request.method == 'PUT':
+        empleado = get_object_or_404(Employee, pk=empleado_id)
+        data = json.loads(request.body)
+        if 'role' in data:
+            empleado.role = data['role']
+        if 'description' in data:
+            empleado.description = data['description']
+        empleado.save()
+        return JsonResponse({'id': empleado.id, 'name': empleado.user.name, 'role': empleado.role})
+
+    elif request.method == 'DELETE':
+        empleado = get_object_or_404(Employee, pk=empleado_id)
+        empleado.delete()
+        return JsonResponse({'message': 'Employee deleted'})
     
 #############################################################################################################################################################################################################################################################################################################################################################################################
 ## List or create menu item
@@ -232,107 +332,6 @@ def detalle_o_editar_o_eliminar_menu_item(request, menu_id):
         menu_item = get_object_or_404(MenuItem, pk=menu_id)
         menu_item.delete()
         return JsonResponse({'message': 'Menu item deleted'})
-
-#############################################################################################################################################################################################################################################################################################################################################################################################
-# List or create employee
-@csrf_exempt
-#@permission_classes([IsAdmin])
-@permission_classes([AllowAny])
-@require_http_methods(["GET", "POST"])
-def listar_o_crear_empleado(request):
-    if request.method == 'GET':
-        empleados = Employee.objects.select_related('user').all()
-        data = [
-            {
-                'id': e.id,
-                'user_id': e.user.id if e.user else None,
-                'user_name': e.user.name if e.user else None,
-                'password': e.secret_password,
-                'image': e.image.url if e.image else None,
-                'role': e.role,
-                'description': e.description
-            } for e in empleados
-        ]
-        return JsonResponse(data, safe=False)
-    
-    elif request.method == 'POST':
-        data = json.loads(request.body)
-        password = data.get('password')
-        if not password:
-            return JsonResponse({"error": "Password is required"}, status=400)
-
-        user_data = {
-            'name': data.get('name'),
-            'address': data.get('address'),
-            'contact': data.get('contact'),
-            'buyer_score': data.get('buyer_score', 0),
-            'password': password
-        }
-        user_serializer = UserSerializer(data=user_data)
-        if not user_serializer.is_valid():
-            return JsonResponse(user_serializer.errors, status=400)
-
-        user = user_serializer.save()
-        # Create token for the user
-        token, _ = Token.objects.get_or_create(user=user)
-
-        try:
-            empleado = Employee(
-                user=user,
-                secret_password=data.get('password'),
-                image=data.get('image'),
-                role=data.get('role'),
-                description=data.get('description')
-            )
-            empleado.save()
-
-            return JsonResponse({
-                'token': token.key,              # <-- token here
-                'employee_id': empleado.id,
-                'user_id': user.id,
-                'name': user.name,
-                'role': empleado.role
-            }, status=201)
-        except Exception as e:
-            user.delete()
-            return JsonResponse({'error': str(e)}, status=400)
-
-
-
-# Update or delete employee
-@csrf_exempt
-#@permission_classes([IsSelfEmployee|IsAdmin])
-@permission_classes([AllowAny])
-@require_http_methods(["GET", "PUT", "DELETE"])
-def detalle_o_editar_o_eliminar_empleado(request, empleado_id):
-    if request.method == 'GET':
-        empleado = get_object_or_404(Employee, pk=empleado_id)
-        data = {
-            'id': empleado.id,
-            'user_id': empleado.user.id if empleado.user else None,
-            'user_name': empleado.user.name if empleado.user else None,
-            'password': empleado.secret_password,
-            'image': empleado.image.url if empleado.image else None,
-            'role': empleado.role,
-            'description': empleado.description
-        }
-        return JsonResponse(data)
-
-
-    elif request.method == 'PUT':
-        empleado = get_object_or_404(Employee, pk=empleado_id)
-        data = json.loads(request.body)
-        if 'role' in data:
-            empleado.role = data['role']
-        if 'description' in data:
-            empleado.description = data['description']
-        empleado.save()
-        return JsonResponse({'id': empleado.id, 'name': empleado.user.name, 'role': empleado.role})
-
-    elif request.method == 'DELETE':
-        empleado = get_object_or_404(Employee, pk=empleado_id)
-        empleado.delete()
-        return JsonResponse({'message': 'Employee deleted'})
 
 #############################################################################################################################################################################################################################################################################################################################################################################################
 # List or create order

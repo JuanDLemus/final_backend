@@ -43,25 +43,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 class Employee(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
-    secret_password = models.CharField(max_length=255, default="default_password", null=True, blank=True)
     image = models.ImageField(upload_to='employee_images/', null=True, blank=True)
     role = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.user.name if self.user else 'No User'} - {self.role if self.role else 'No Role'}"
-
-    def set_secret_password(self, raw_password):
-        self.secret_password = make_password(raw_password)
-
-    def check_secret_password(self, raw_password):
-        return check_password(raw_password, self.secret_password)
-
-    def set_unusable_secret_password(self):
-        self.secret_password = make_password(None)
-
-    def has_usable_secret_password(self):
-        return is_password_usable(self.secret_password)
     
 class MenuItem(models.Model):
     CATEGORY_CHOICES = [
