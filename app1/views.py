@@ -1,9 +1,7 @@
 import json
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, get_list_or_404
+from django.shortcuts import get_object_or_404
 from django.db import connection
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -13,13 +11,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from django.contrib.auth import authenticate
 from .models import User, MenuItem, Order, Employee, OrderMenu
-from .serializers import UserSerializer, EmployeeSerializer, MenuItemSerializer, OrderSerializer, OrderMenuSerializer
-from django.contrib.auth.models import User as AuthUser
-from .models import User as Profile, Employee, MenuItem, Order, OrderMenu
-from .permissions import (
-    IsAdmin, IsEmployee, IsSelfProfile, IsSelfEmployee,
-    MenuAccess, OrderListCreate, OrderObjectAccess
-)
+from .serializers import UserSerializer
+from .permissions import IsEmployee, IsSelf, IsMenu, IsAdmin, IsOrder
+
 #############################################################################################################################################################################################################################################################################################################################################################################################
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -36,8 +30,7 @@ def user_login(request):
 
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
-#@permission_classes([IsAuthenticated])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def user_profile(request):
     data = UserSerializer(request.user).data
     return Response(
@@ -48,8 +41,7 @@ def user_profile(request):
 # Listar todos los usuarios o crear uno nuevo
 @api_view(['GET', 'POST'])
 @authentication_classes([TokenAuthentication])
-#@permission_classes([IsAdmin|IsEmployee])  # Solo admin o empleados pueden usar
-@permission_classes([AllowAny])
+@permission_classes([IsEmployee])
 def listar_o_crear_usuario(request):
     if request.method == 'GET':
         usuarios = User.objects.all()
@@ -80,8 +72,7 @@ def listar_o_crear_usuario(request):
 # Detalle, editar o eliminar un usuario
 @api_view(['GET', 'PUT', 'DELETE'])
 @authentication_classes([TokenAuthentication])
-#@permission_classes([IsSelfProfile|IsAdmin])  # El propio usuario o admin
-@permission_classes([AllowAny])
+@permission_classes([IsSelf])
 def detalle_o_editar_o_eliminar_usuario(request, usuario_id):
     usuario = get_object_or_404(User, pk=usuario_id)
 
@@ -128,73 +119,66 @@ def detalle_o_editar_o_eliminar_usuario(request, usuario_id):
     
 #############################################################################################################################################################################################################################################################################################################################################################################################
 # List or create employee
-@csrf_exempt
-#@permission_classes([IsAdmin])
-@permission_classes([AllowAny])
-@require_http_methods(["GET", "POST"])
+@api_view(['GET', 'POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAdmin])
 def listar_o_crear_empleado(request):
     if request.method == 'GET':
         empleados = Employee.objects.select_related('user').all()
         data = [
             {
                 'id': e.id,
-                'user_id': e.user.id if e.user else None,
-                'user_name': e.user.name if e.user else None,
-                'image': e.image.url if e.image else None,
+                'user_id': e.user.id,
+                'user_name': e.user.name,
+                'image': request.build_absolute_uri(e.image.url) if e.image else None,
                 'role': e.role,
                 'description': e.description
-            } for e in empleados
+            }
+            for e in empleados
         ]
-        return JsonResponse(data, safe=False)
-    
-    elif request.method == 'POST':
-        data = json.loads(request.body)
-        password = data.get('password')
-        if not password:
-            return JsonResponse({"error": "Password is required"}, status=400)
+        return Response(data)
 
-        user_data = {
-            'name': data.get('name'),
-            'address': data.get('address'),
-            'contact': data.get('contact'),
-            'buyer_score': data.get('buyer_score', 0),
-            'password': password
-        }
-        user_serializer = UserSerializer(data=user_data)
-        if not user_serializer.is_valid():
-            return JsonResponse(user_serializer.errors, status=400)
+    # POST path (only reachable if IsEmployee passes)
+    payload = request.data
+    password = payload.get('password')
+    if not password:
+        return Response({"error": "Password is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = user_serializer.save()
-        # Create token for the user
-        token, _ = Token.objects.get_or_create(user=user)
+    user_data = {
+        'name':        payload.get('name'),
+        'address':     payload.get('address'),
+        'contact':     payload.get('contact'),
+        'buyer_score': payload.get('buyer_score', 0),
+        'password':    password
+    }
+    user_ser = UserSerializer(data=user_data)
+    user_ser.is_valid(raise_exception=True)
+    user = user_ser.save()
+    token, _ = Token.objects.get_or_create(user=user)
 
-        try:
-            empleado = Employee(
-                user=user,
-                image=data.get('image'),
-                role=data.get('role'),
-                description=data.get('description')
-            )
-            empleado.save()
+    try:
+        empleado = Employee.objects.create(
+            user        = user,
+            image       = payload.get('image'),
+            role        = payload.get('role'),
+            description = payload.get('description')
+        )
+        return Response({
+            'token':       token.key,
+            'employee_id': empleado.id,
+            'user_id':     user.id,
+            'name':        user.name,
+            'role':        empleado.role
+        }, status=status.HTTP_201_CREATED)
 
-            return JsonResponse({
-                'token': token.key,              # <-- token here
-                'employee_id': empleado.id,
-                'user_id': user.id,
-                'name': user.name,
-                'role': empleado.role
-            }, status=201)
-        except Exception as e:
-            user.delete()
-            return JsonResponse({'error': str(e)}, status=400)
-
-
+    except Exception as e:
+        user.delete()
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 # Update or delete employee
-@csrf_exempt
-#@permission_classes([IsSelfEmployee|IsAdmin])
-@permission_classes([AllowAny])
-@require_http_methods(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT", "DELETE"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsSelf])
 def detalle_o_editar_o_eliminar_empleado(request, empleado_id):
     if request.method == 'GET':
         empleado = get_object_or_404(Employee, pk=empleado_id)
@@ -226,10 +210,9 @@ def detalle_o_editar_o_eliminar_empleado(request, empleado_id):
     
 #############################################################################################################################################################################################################################################################################################################################################################################################
 ## List or create menu item
-@csrf_exempt
-#@permission_classes([MenuAccess])
-@permission_classes([AllowAny])
-@require_http_methods(["GET", "POST"])
+@api_view(["GET", "POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsMenu])
 def listar_o_crear_menu_item(request):
     if request.method == 'GET':
         menu_items = MenuItem.objects.all()
@@ -267,10 +250,9 @@ def listar_o_crear_menu_item(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
 
-@csrf_exempt
-#@permission_classes([MenuAccess])
-@permission_classes([AllowAny])
-@require_http_methods(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT", "DELETE"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsMenu])
 def detalle_o_editar_o_eliminar_menu_item(request, menu_id):
     if request.method == 'GET':
         menu_item = get_object_or_404(MenuItem, pk=menu_id)
@@ -332,13 +314,18 @@ def detalle_o_editar_o_eliminar_menu_item(request, menu_id):
 
 #############################################################################################################################################################################################################################################################################################################################################################################################
 # List or create order
-@csrf_exempt
-#@permission_classes([OrderListCreate])
-@permission_classes([AllowAny])
-@require_http_methods(["GET", "POST"])
+@api_view(["GET", "POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsOrder])
 def listar_o_crear_orden(request):
+    user = request.user
+
     if request.method == 'GET':
-        orders = Order.objects.select_related('user').all()
+        if hasattr(user, 'employee') or user.is_staff:
+            orders = Order.objects.select_related('user').all()
+        else:
+            orders = Order.objects.filter(user=user).select_related('user')
+
         data = []
         for order in orders:
             order_items = OrderMenu.objects.filter(order=order).select_related('menu_item')
@@ -359,29 +346,31 @@ def listar_o_crear_orden(request):
                 'status': order.status,
                 'items': items_data
             })
-        return JsonResponse(data, safe=False)
 
+        return JsonResponse(data, safe=False)
 
     elif request.method == 'POST':
         try:
             data = json.loads(request.body)
-            user_id = data.get('user_id')
             items = data.get('items')
 
-            if not user_id or not items:
-                return JsonResponse({'error': 'Missing user_id or items'}, status=400)
+            if not items:
+                return JsonResponse({'error': 'Missing items'}, status=400)
 
-            user = get_object_or_404(User, pk=user_id)
+            user_id = data.get('user_id')
+            if user_id and user.is_staff:
+                user_obj = get_object_or_404(User, pk=user_id)
+            else:
+                user_obj = user
 
             order = Order.objects.create(
-                user=user,
+                user=user_obj,
                 status='pending',
                 datetime=data.get('datetime'),
                 total_price=0
             )
 
             total_price = 0
-
             for item in items:
                 menu_item_id = item.get('menu_item_id')
                 quantity = item.get('quantity', 1)
@@ -416,13 +405,18 @@ def listar_o_crear_orden(request):
 
 
 # Update or delete an order
-@csrf_exempt
-#@permission_classes([OrderObjectAccess])
-@permission_classes([AllowAny])
-@require_http_methods(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT", "DELETE"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsOrder])
 def detalle_o_editar_o_eliminar_orden(request, orden_id):
+    user = request.user
+    order = get_object_or_404(Order, pk=orden_id)
+
+    # Restrict GET to owner or employee/admin
     if request.method == 'GET':
-        order = get_object_or_404(Order, pk=orden_id)
+        if order.user != user and not hasattr(user, 'employee') and not user.is_staff:
+            return JsonResponse({'error': 'Forbidden'}, status=403)
+
         order_items = OrderMenu.objects.filter(order=order).select_related('menu_item')
         items_data = [
             {
@@ -444,22 +438,34 @@ def detalle_o_editar_o_eliminar_orden(request, orden_id):
         return JsonResponse(data)
 
     elif request.method == 'PUT':
-        order = get_object_or_404(Order, pk=orden_id)
+        if not hasattr(user, 'employee') and not user.is_staff:
+            return JsonResponse({'error': 'Only employees can update orders'}, status=403)
+
         data = json.loads(request.body)
         if 'status' in data:
             order.status = data['status']
         order.save()
-        return JsonResponse({'id': order.id, 'status': order.status, 'user_id': order.user.id, 'total_price': order.total_price})
+
+        return JsonResponse({
+            'id': order.id,
+            'status': order.status,
+            'user_id': order.user.id,
+            'total_price': order.total_price
+        })
 
     elif request.method == 'DELETE':
-        order = get_object_or_404(Order, pk=orden_id)
+        if not user.is_staff:
+            return JsonResponse({'error': 'Only admins can delete orders'}, status=403)
+
         order.delete()
         return JsonResponse({'message': 'Order deleted'})
 
+
 #############################################################################################################################################################################################################################################################################################################################################################################################
 # List or create order menu
-@csrf_exempt
-@require_http_methods(["GET", "POST"])
+@api_view(["GET", "POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAdmin])
 def listar_o_crear_order_menu(request):
     if request.method == 'GET':
         order_menus = OrderMenu.objects.select_related('order', 'menu_item').all()
@@ -488,8 +494,9 @@ def listar_o_crear_order_menu(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
 
-@csrf_exempt
-@require_http_methods(["DELETE", "GET"])
+@api_view(["DELETE", "GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAdmin])
 def detalle_o_eliminar_order_menu(request, orden_menu_id):
     if request.method == 'GET':
         om = get_object_or_404(OrderMenu, pk=orden_menu_id)
@@ -509,10 +516,9 @@ def detalle_o_eliminar_order_menu(request, orden_menu_id):
 
 
 #############################################################################################################################################################################################################################################################################################################################################################################################
-@csrf_exempt
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAdmin])
-#@permission_classes([AllowAny])
-@require_http_methods(["GET"])
 def listar_tablas(request):
     cursor = connection.cursor()
     cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name LIKE 'app1%';")

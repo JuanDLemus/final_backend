@@ -48,7 +48,7 @@ class User(NextIDMixin, AbstractBaseUser, PermissionsMixin):
 
 class Employee(NextIDMixin):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
-    image = models.ImageField(upload_to='employee_images/', null=True, blank=True)
+    image = models.ImageField(max_length=255, null=True, blank=True)
     role = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
 
