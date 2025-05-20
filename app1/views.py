@@ -41,15 +41,18 @@ def user_profile(request):
 # Listar todos los usuarios o crear uno nuevo
 @api_view(['GET', 'POST'])
 @authentication_classes([TokenAuthentication])
-@permission_classes([IsEmployee])
 def listar_o_crear_usuario(request):
     if request.method == 'GET':
+        # Solo empleados pueden listar
+        if not IsEmployee().has_permission(request, None):
+            return Response({"detail": "Not authorized."}, status=status.HTTP_403_FORBIDDEN)
+
         usuarios = User.objects.all()
         serializer = UserSerializer(usuarios, many=True)
-        # No devolver password, porque está write_only, no aparece en serializer.data
         return Response(serializer.data)
 
     elif request.method == 'POST':
+        # Permitir a cualquiera crear un usuario, sin autenticación
         password = request.data.get('password')
         if not password:
             return Response(
