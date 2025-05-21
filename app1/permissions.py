@@ -95,3 +95,16 @@ class IsOrder(BasePermission):
             return hasattr(user, 'employee') and user.employee.role == 'Admin'
 
         return False
+    
+    
+class IsRegistration(BasePermission):
+    """
+    Allow anyone to POST (register), but restrict GET to employees only.
+    """
+
+    def has_permission(self, request, view):
+        if request.method == 'POST':
+            return True  # Anyone can register
+        elif request.method == 'GET':
+            return request.user and request.user.is_authenticated and hasattr(request.user, 'employee')
+        return False

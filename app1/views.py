@@ -12,7 +12,7 @@ from rest_framework.authentication import TokenAuthentication
 from django.contrib.auth import authenticate
 from .models import User, MenuItem, Order, Employee, OrderMenu
 from .serializers import UserSerializer
-from .permissions import IsEmployee, IsSelf, IsMenu, IsAdmin, IsOrder
+from .permissions import IsRegistration, IsSelf, IsMenu, IsAdmin, IsOrder
 
 #############################################################################################################################################################################################################################################################################################################################################################################################
 @api_view(['POST'])
@@ -41,18 +41,15 @@ def user_profile(request):
 # Listar todos los usuarios o crear uno nuevo
 @api_view(['GET', 'POST'])
 @authentication_classes([TokenAuthentication])
+@permission_classes([IsRegistration])
 def listar_o_crear_usuario(request):
     if request.method == 'GET':
-        # Solo empleados pueden listar
-        if not IsEmployee().has_permission(request, None):
-            return Response({"detail": "Not authorized."}, status=status.HTTP_403_FORBIDDEN)
-
         usuarios = User.objects.all()
         serializer = UserSerializer(usuarios, many=True)
+        # No devolver password, porque está write_only, no aparece en serializer.data
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        # Permitir a cualquiera crear un usuario, sin autenticación
         password = request.data.get('password')
         if not password:
             return Response(
